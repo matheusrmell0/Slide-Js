@@ -17,7 +17,7 @@ export default class Slide {
   // Método que remove e para a ativação do movimento de mouse ou dedo e sua função de callback ao soltar o click do mouse
   // Além de finalizar a cadeia de eventos ele salva na propriedade (this.dist.finalPosition) do objeto dist o último valor retornado e atualizado da propriedade this.dist.movement
   onEnd(event) {
-    const movetype = (event.type === 'mouseup') ? 'mousemove' : 'touchmove'
+    const movetype = event.type === "mouseup" ? "mousemove" : "touchmove";
     this.wrapper.removeEventListener(movetype, this.onMove);
     this.dist.finalPosition = this.dist.movePosition;
   }
@@ -34,7 +34,10 @@ export default class Slide {
   // A ativação retorna um valor atualizado da propriedade this.dist.movement que é salvo em uma constante
   // este valor salvo retornado é passado para outro método (moveSlide) como parâmetro e o ativa
   onMove(event) {
-    const pointerPosition = (event.type === 'mousemove') ? event.clientX : event.changedTouches[0].clientX;
+    const pointerPosition =
+      event.type === "mousemove"
+        ? event.clientX
+        : event.changedTouches[0].clientX;
     const finalPosition = this.updatePosition(pointerPosition);
     this.moveSlide(finalPosition);
   }
@@ -71,11 +74,57 @@ export default class Slide {
     this.onEnd = this.onEnd.bind(this);
   }
 
+  // Calcula a largura do wrapper (div pai) e subtraí com a largura do elemento slide dentro dela e divide o resultado por 2
+  // Logo subtraí o resultado pela coordenada X do elemento filho em relação a esquerda da tela, e transforma em negativo
+  // Retorna o valor da posição do item para centralizar na tela
+  // Com esse cálculo é possível centralizar o item do wrapper na tela do usuário passando essas coordenada no método moveSlide
+  calcSlidePosition(slide) {
+    // Pega o total da tela (wrapper) - largura do item (slide) = Margens do item (slide)
+    // (Margens do item / 2) - slide.offsetLeft (Posição do item (slide) em relação a esquerda da tela)
+    const margin = (this.wrapper.offsetWidth - slide.offsetWidth) / 2;
+    return -(slide.offsetLeft - margin);
+  }
+
+  // Configurações do Slide como seu elemento e posição na tela centralizada
+  // Desestrutura o seletor informado no parâmetro da classe (slide) com cada filho dela em uma Array
+  // Retorna uma array com objetos para cada item do parâmetro slide com o method .map
+  // Nesse objeto tem o elemento e sua posição em relação a esquerda do objeto window
+  slidesConfig() {
+    this.slideArray = [...this.slide.children].map((element) => {
+      const position = this.calcSlidePosition(element);
+      return { element, position };
+    });
+  }
+
+ // Método que salva em um objeto a posição do item informado no parâmetro pelo index 
+ // Objeto contém a posição index ativa do item e suas respectivas ordem preview e next
+  navSlidesByIndex(index) {
+    const last = this.slideArray.length - 1;
+    this.index = {
+      prev: index ? index - 1 : undefined,
+      active: index,
+      next: index === last ? undefined : index + 1,
+    };
+  }
+
+  // Foca no slide através do index repassado no parâmetro do método
+  // O parâmetro index recebe a propriedade position do elemento do objeto this.slideArray através do seu index
+  // A propriedade position foi calculada no método calcSlidePosition para que o resultado subtraia no parâmetro do método moveSlide
+  // Logo o item do slide receberá um valor para o eixoX no translate3d que focará no elemento/imagem centralizado na tela
+  // Também o index da array informada no parâmetro irá para outro método (navSlidesByIndex)
+  focusSlideByIndex(index) {
+    this.moveSlide(this.slideArray[index].position);
+    this.navSlidesByIndex(index);
+    // Altera o valor da posição do item no slide para o item focado na função
+    this.dist.finalPosition = this.slideArray[index].position;
+  }
+
   // Método de iniciar os métodos que encadeiam os eventos da classe
   // Retorna o this que referencia o objeto principal da classe
   init() {
     this.bindEvents();
     this.addSlideEvents();
+    this.slidesConfig();
     return this;
   }
 }
