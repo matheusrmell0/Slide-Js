@@ -13,6 +13,8 @@ export class Slide {
     // Esse objeto controla o esqueleto da classe, é com ele que todos os métodos do slide trabalham e ativam suas devidas funcionalidades
     this.dist = { finalPosition: 0, startX: 0, movement: 0 };
     this.activeClass = "active";
+    // Novo evento criado e adicionado no constructor
+    this.changeEvent = new Event("changeEvent");
   }
 
   // Adiciona um transição suave na mudança dos slides
@@ -143,6 +145,10 @@ export class Slide {
     // Altera o valor da posição do item no slide para o item focado na função
     this.dist.finalPosition = activeSlide.position;
     this.changeActiveClass();
+
+    // Emite o evento this.changeEvent ('changeEvent' do constructor) no elemento wrapper
+    // Este evento agora poderá ser observado no próprio wrapper
+    this.wrapper.dispatchEvent(this.changeEvent);
   }
 
   // Adiciona uma classe CSS com estilos no slide atual ativo na tela, e remove dos demais
@@ -185,8 +191,8 @@ export class Slide {
     this.onEnd = this.onEnd.bind(this);
     // Debounce utilizado para melhor performar o evento de resize
     this.onResize = debounce(this.onResize.bind(this), 200);
-    this.activePrevSlide = this.activePrevSlide.bind(this)
-    this.activeNextSlide = this.activeNextSlide.bind(this)
+    this.activePrevSlide = this.activePrevSlide.bind(this);
+    this.activeNextSlide = this.activeNextSlide.bind(this);
   }
 
   // Método de iniciar os métodos que encadeiam os eventos da classe
@@ -204,9 +210,13 @@ export class Slide {
 
 // Nova classe criada e extendida da classe Slide com funcionalidades para utilização de botões para navegação
 export class SlideNav extends Slide {
+  constructor(...args) {
+    super(...args);
+    this.bindControlEvents();
+  }
 
-// Recebe dois parametros (Botoes de prev e next)
-// Ativa e adiciona o evento de click no this dos elementos selecionados 
+  // Recebe dois parametros (Botoes de prev e next)
+  // Ativa e adiciona o evento de click no this dos elementos selecionados
   addArrow(prev, next) {
     this.prevElement = document.querySelector(prev);
     this.nextElement = document.querySelector(next);
@@ -215,8 +225,65 @@ export class SlideNav extends Slide {
 
   // Com os elementos selecionados, ativa através do mouse click o callback das funcoes this.activePrevSlide e this.activeNextSlide
   // Funcoes essas que movimentam o slide através do index anterior e próximo da array dos elementos slide
-  addArrowEvent(){
-    this.prevElement.addEventListener('click', this.activePrevSlide)
-    this.nextElement.addEventListener('click', this.activeNextSlide)
+  addArrowEvent() {
+    this.prevElement.addEventListener("click", this.activePrevSlide);
+    this.nextElement.addEventListener("click", this.activeNextSlide);
+  }
+
+  // Cria um elemento HTML (ul) contendo o dataset 'slide'
+  // Realiza um loop pelo slideArray (Array que contem o elemento e o index de cada item do slide) adicionando e incrementando um elemento HTML (li)
+  // Essa li recebe o valor de index do elemento acrescentado de +1 para melhor leitura
+  // Adiciona a nova lista de elementos HTML logo abaixo do wrapper
+  // Retorna a constante control
+  createControl() {
+    const control = document.createElement("ul");
+    control.dataset.control = "slide";
+
+    this.slideArray.forEach((item, index) => {
+      control.innerHTML += `<li><a href="#slide${index + 1}">${
+        index + 1
+      }</a></li>`;
+    });
+    this.wrapper.appendChild(control);
+    return control;
+  }
+
+  // Método que recebe em seu parametro o item e o index
+  // Adiciona o event de 'click' ao item
+  // Ativa o método de focar o slide através do index, passando o index no parametro inical
+  eventControl(item, index) {
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.focusSlideByIndex(index);
+    });
+    // Toda vez que o slide for alterado o evento changeEvent será ativado realizando a função de callback this.activeControlItem
+    this.wrapper.addEventListener("changeEvent", this.activeControlItem);
+  }
+
+  // Realiza um loop por uma array contendo todos os slides e adiciona uma classe this.activeClass ('active') no slide focado removando dos demais outros
+  // Esse método utiliza do index da classe ativa no foco do slide
+  activeControlItem() {
+    this.controlArray.forEach((item) =>
+      item.classList.remove(this.activeClass)
+    );
+    this.controlArray[this.index.active].classList.add(this.activeClass);
+  }
+
+// Método que por padrão recebe o this.createControl em seu this.control ou outro elemento HTML em seu parametro
+// Por padrão recebe o return da constante control que é o elemento HTML criado no this.createControl
+// Desestrutura os filhos do elemento HTML e o transforma em uma Array
+// Ativa o método this.activeControlItem para adicionar a classe 'active' no primeiro HTML (li) abaixo do slide
+// Realiza um loop pela a nova Array com os filhos do elemento HTML e ativa para cada um o método this.eventControl, que recebe tanto o index quanto o item em sua função
+  addControl(customControl) {
+    this.control = document.querySelector(customControl) || this.createControl();
+    this.controlArray = [...this.control.children];
+    this.activeControlItem();
+    this.controlArray.forEach(this.eventControl);
+  }
+
+  // Método que referência as funções de callback ao objeto this principal da classe
+  bindControlEvents() {
+    this.eventControl = this.eventControl.bind(this);
+    this.activeControlItem = this.activeControlItem.bind(this);
   }
 }

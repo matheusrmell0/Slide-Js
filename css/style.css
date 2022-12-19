@@ -28,15 +28,37 @@ img {
   width: 80vw;
   max-width: 800px;
   margin: 0 20px;
-  opacity: .8;
-  transform: scale(.8);
-  transition: .4s;
+  opacity: 0.8;
+  transform: scale(0.8);
+  transition: 0.4s;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .4);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .slide li.active {
   opacity: 1;
   transform: scale(1);
+}
+
+[data-control="slide"] {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+[data-control="slide"] li a {
+  display: block;
+  width: 12px;
+  height: 12px;
+  background: #fb5;
+  border-radius: 50%;
+  overflow: hidden;
+  text-indent: -1000px;
+  margin: 5px;
+}
+
+[data-control="slide"] li.active a,
+[data-control="slide"] li a:hover {
+  background: #e54;
 }
