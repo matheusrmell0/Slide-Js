@@ -209,7 +209,7 @@ export class Slide {
 }
 
 // Nova classe criada e extendida da classe Slide com funcionalidades para utilização de botões para navegação
-export class SlideNav extends Slide {
+export default class SlideNav extends Slide {
   constructor(...args) {
     super(...args);
     this.bindControlEvents();
