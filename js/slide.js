@@ -6,6 +6,11 @@ export default class Slide {
     this.dist = { finalPosition: 0, startX: 0, movement: 0 };
   }
 
+  // Adiciona um transição suave na mudança do slide
+  transition(active) {
+    this.slide.style.transition = active ? 'transform .3s' : '';
+  }
+
   // Este método ativado apenas no movimentar do mouse ou dedo, recebe em seu parâmetro o retorno da função updatePosition salvo em uma constante na função onMove o valor atualizado da propriedade (this.dist.movement) do objeto dist.
   // Este valor atualizado é passado em uma propriedade CSS do seletor referenciado na parâmetro da classe
   // O novo valor atualizado do this.dist.movement que foi passado na propriedade translate3d do elemento CSS é atribuido a uma nova propriedade (this.movePosition) do objeto dist para ser utilizado no método updatePosition
@@ -20,6 +25,19 @@ export default class Slide {
     const movetype = event.type === "mouseup" ? "mousemove" : "touchmove";
     this.wrapper.removeEventListener(movetype, this.onMove);
     this.dist.finalPosition = this.dist.movePosition;
+    this.transition(true);
+    this.changeSlideOnEnd();
+  }
+
+  // Muda o slide no final do movimento e o coloca no centro
+  changeSlideOnEnd() {
+    if (this.dist.movement > 120 && this.index.next !== undefined) {
+      this.activeNextSlide();
+    } else if (this.dist.movement < -120 && this.index.prev !== undefined) {
+      this.activePrevSlide();
+    } else {
+      this.focusSlideByIndex(this.index.active);
+    }
   }
 
   // O método updatePosition ativado apenas no movimentar do mouse salva na propriedade do objeto dist (movement) o valor da subtração da propriedade startX pelas
@@ -55,6 +73,7 @@ export default class Slide {
       movetype = "touchmove";
     }
     this.wrapper.addEventListener(movetype, this.onMove);
+    this.transition(false);
   }
 
   // Método que adiciona os eventos de segurar e soltar click do mouse no seletor atribuído no parâmetro da classe
@@ -96,8 +115,8 @@ export default class Slide {
     });
   }
 
- // Método que salva em um objeto a posição do item informado no parâmetro pelo index 
- // Objeto contém a posição index ativa do item e suas respectivas ordem preview e next
+  // Método que salva em um objeto a posição do item informado no parâmetro pelo index
+  // Objeto contém a posição index ativa do item e suas respectivas ordem preview e next
   navSlidesByIndex(index) {
     const last = this.slideArray.length - 1;
     this.index = {
@@ -113,16 +132,28 @@ export default class Slide {
   // Logo o item do slide receberá um valor para o eixoX no translate3d que focará no elemento/imagem centralizado na tela
   // Também o index da array informada no parâmetro irá para outro método (navSlidesByIndex)
   focusSlideByIndex(index) {
-    this.moveSlide(this.slideArray[index].position);
+    const activeSlide = this.slideArray[index];
+    this.moveSlide(activeSlide.position);
     this.navSlidesByIndex(index);
     // Altera o valor da posição do item no slide para o item focado na função
-    this.dist.finalPosition = this.slideArray[index].position;
+    this.dist.finalPosition = activeSlide.position;
+  }
+
+  // Ativa o método this.focusSlideByIndex para o slide anterior de acordo com o slide atual
+  activePrevSlide() {
+    if (this.index.prev !== undefined) this.focusSlideByIndex(this.index.prev);
+  }
+
+  // Ativa o método this.focusSlideByIndex para o próximo slide de acordo com o slide atual
+  activeNextSlide() {
+    if (this.index.next !== undefined) this.focusSlideByIndex(this.index.next);
   }
 
   // Método de iniciar os métodos que encadeiam os eventos da classe
   // Retorna o this que referencia o objeto principal da classe
   init() {
     this.bindEvents();
+    this.transition(true);
     this.addSlideEvents();
     this.slidesConfig();
     return this;
