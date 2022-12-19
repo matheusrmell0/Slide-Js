@@ -1,8 +1,7 @@
-import Slide from "./slide.js";
+import { Slide, SlideNav } from "./slide.js";
 
-const slide = new Slide('.slide', '.slide-wrapper');
+const slide = new SlideNav('.slide', '.slide-wrapper');
 slide.init()
-slide.focusSlideByIndex(4)
-slide.activeNextSlide()
-
 console.log(slide)
+
+slide.addArrow('.prev', '.next')

@@ -1,8 +1,8 @@
 // Função de debounce importada para melhorar a performace dos eventos diminuindo seus disparos
-import debounce from './debounce.js';
+import debounce from "./debounce.js";
 
 // Função de movimentar Slides
-export default class Slide {
+export class Slide {
   // O constructor recebe dois parametros do DOM (wrapper e slide)
   // Slide vai o conjunto de imagens a serem listadas através de um seletor, essas imagens vão receber vários métodos, configurações e objetos
   // Wrapper é a uma div (embrulho) na qual todas as imagens do slide estão dentro, ele é a container pai do slide e recebe algumas funções e métodos para serem usados na classe
@@ -173,7 +173,7 @@ export default class Slide {
     }, 1000);
   }
 
-  // Ativa o método onResize no evento de resize da página 
+  // Ativa o método onResize no evento de resize da página
   addReizeEvent() {
     window.addEventListener("resize", this.onResize);
   }
@@ -185,6 +185,8 @@ export default class Slide {
     this.onEnd = this.onEnd.bind(this);
     // Debounce utilizado para melhor performar o evento de resize
     this.onResize = debounce(this.onResize.bind(this), 200);
+    this.activePrevSlide = this.activePrevSlide.bind(this)
+    this.activeNextSlide = this.activeNextSlide.bind(this)
   }
 
   // Método de iniciar os métodos que encadeiam os eventos da classe
@@ -195,6 +197,26 @@ export default class Slide {
     this.addSlideEvents();
     this.slidesConfig();
     this.addReizeEvent();
+    this.focusSlideByIndex(0);
     return this;
+  }
+}
+
+// Nova classe criada e extendida da classe Slide com funcionalidades para utilização de botões para navegação
+export class SlideNav extends Slide {
+
+// Recebe dois parametros (Botoes de prev e next)
+// Ativa e adiciona o evento de click no this dos elementos selecionados 
+  addArrow(prev, next) {
+    this.prevElement = document.querySelector(prev);
+    this.nextElement = document.querySelector(next);
+    this.addArrowEvent();
+  }
+
+  // Com os elementos selecionados, ativa através do mouse click o callback das funcoes this.activePrevSlide e this.activeNextSlide
+  // Funcoes essas que movimentam o slide através do index anterior e próximo da array dos elementos slide
+  addArrowEvent(){
+    this.prevElement.addEventListener('click', this.activePrevSlide)
+    this.nextElement.addEventListener('click', this.activeNextSlide)
   }
 }
