@@ -1,14 +1,24 @@
+// Função de debounce importada para melhorar a performace dos eventos diminuindo seus disparos
+import debounce from './debounce.js';
+
 // Função de movimentar Slides
 export default class Slide {
+  // O constructor recebe dois parametros do DOM (wrapper e slide)
+  // Slide vai o conjunto de imagens a serem listadas através de um seletor, essas imagens vão receber vários métodos, configurações e objetos
+  // Wrapper é a uma div (embrulho) na qual todas as imagens do slide estão dentro, ele é a container pai do slide e recebe algumas funções e métodos para serem usados na classe
   constructor(slide, wrapper) {
     this.slide = document.querySelector(slide);
     this.wrapper = document.querySelector(wrapper);
+    // this.dist é um objeto que recebe a posição final, inicial e o movimento completo do mouse entre o pointer inicial e final em relação ao eixo X
+    // Esse objeto controla o esqueleto da classe, é com ele que todos os métodos do slide trabalham e ativam suas devidas funcionalidades
     this.dist = { finalPosition: 0, startX: 0, movement: 0 };
+    this.activeClass = "active";
   }
 
-  // Adiciona um transição suave na mudança do slide
+  // Adiciona um transição suave na mudança dos slides
+  // Esse método recebe um valor bolleano em sua verificação
   transition(active) {
-    this.slide.style.transition = active ? 'transform .3s' : '';
+    this.slide.style.transition = active ? `transform .3s` : ``;
   }
 
   // Este método ativado apenas no movimentar do mouse ou dedo, recebe em seu parâmetro o retorno da função updatePosition salvo em uma constante na função onMove o valor atualizado da propriedade (this.dist.movement) do objeto dist.
@@ -29,13 +39,15 @@ export default class Slide {
     this.changeSlideOnEnd();
   }
 
-  // Muda o slide no final do movimento e o coloca no centro
+  // Faz uma verificação do exato valor do movimento salvo e também a existencia de um item antes e seguinte do ativo no momento
+  // Muda o slide no final do movimento e o coloca no centro do wrapper
   changeSlideOnEnd() {
     if (this.dist.movement > 120 && this.index.next !== undefined) {
       this.activeNextSlide();
     } else if (this.dist.movement < -120 && this.index.prev !== undefined) {
       this.activePrevSlide();
     } else {
+      // Caso o movimento vá além do wrapper o slide automaticamente volta a origem do ativo
       this.focusSlideByIndex(this.index.active);
     }
   }
@@ -86,13 +98,6 @@ export default class Slide {
     this.wrapper.addEventListener("touchend", this.onEnd);
   }
 
-  // Método que referência as funções de callback ao objeto this principal da classe
-  bindEvents() {
-    this.onMove = this.onMove.bind(this);
-    this.onStart = this.onStart.bind(this);
-    this.onEnd = this.onEnd.bind(this);
-  }
-
   // Calcula a largura do wrapper (div pai) e subtraí com a largura do elemento slide dentro dela e divide o resultado por 2
   // Logo subtraí o resultado pela coordenada X do elemento filho em relação a esquerda da tela, e transforma em negativo
   // Retorna o valor da posição do item para centralizar na tela
@@ -137,6 +142,15 @@ export default class Slide {
     this.navSlidesByIndex(index);
     // Altera o valor da posição do item no slide para o item focado na função
     this.dist.finalPosition = activeSlide.position;
+    this.changeActiveClass();
+  }
+
+  // Adiciona uma classe CSS com estilos no slide atual ativo na tela, e remove dos demais
+  changeActiveClass() {
+    this.slideArray.forEach((item) =>
+      item.element.classList.remove(this.activeClass)
+    );
+    this.slideArray[this.index.active].element.classList.add(this.activeClass);
   }
 
   // Ativa o método this.focusSlideByIndex para o slide anterior de acordo com o slide atual
@@ -149,6 +163,30 @@ export default class Slide {
     if (this.index.next !== undefined) this.focusSlideByIndex(this.index.next);
   }
 
+  // Esse método é ativado no evento de risize da página
+  // Ele atualiza as configurações, valores e parametros do método slidesConfig
+  // Valores de posicionamento do elemento são alterados para novos valores no timeout de 1 segundo quando a tela sofre um resize
+  onResize() {
+    setTimeout(() => {
+      this.slidesConfig();
+      this.focusSlideByIndex(this.index.active);
+    }, 1000);
+  }
+
+  // Ativa o método onResize no evento de resize da página 
+  addReizeEvent() {
+    window.addEventListener("resize", this.onResize);
+  }
+
+  // Método que referência as funções de callback ao objeto this principal da classe
+  bindEvents() {
+    this.onMove = this.onMove.bind(this);
+    this.onStart = this.onStart.bind(this);
+    this.onEnd = this.onEnd.bind(this);
+    // Debounce utilizado para melhor performar o evento de resize
+    this.onResize = debounce(this.onResize.bind(this), 200);
+  }
+
   // Método de iniciar os métodos que encadeiam os eventos da classe
   // Retorna o this que referencia o objeto principal da classe
   init() {
@@ -156,6 +194,7 @@ export default class Slide {
     this.transition(true);
     this.addSlideEvents();
     this.slidesConfig();
+    this.addReizeEvent();
     return this;
   }
 }
